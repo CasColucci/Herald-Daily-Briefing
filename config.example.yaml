@@ -1,0 +1,60 @@
+# Herald Daily Briefing Configuration
+# Copy this file to config.yaml and fill in your values
+
+# When to run the daily briefings
+schedule: 
+    time: "8:00" # 24 hour format, in your local time
+    timezone: "US/Eastern"
+
+github:
+  token: ""
+
+  # Discover new repos to contribute to
+  discover:
+    languages:
+      - "C#"
+      - "Python"
+    labels:
+      - "good first issue"
+      - "help wanted"
+    min_stars: 10
+    max_age_days: 30
+
+  # Repos you're already watching for updates
+  following:
+    - owner: "example"
+      repo: "cool-project"
+    - owner: "another"
+      repo: "neat-thing"
+
+# RSS feeds (or keep these in data/feeds.yaml instead)
+rss:
+    feeds:
+      - url: "https://example.com/feed.xml"
+        name: "Example Feed"
+
+# Calendar (CalDAV)
+calendar:
+    url: ""                 # Nextcloud CalDAV URL
+    username: ""
+    password: ""
+    lookahead_days: 3       # How far ahead to check
+
+# LLM summarization
+llm:
+    provider: "anthropic"   # or "local"
+    model: "claude-haiku-4-5-20251001"
+    api_key: ""
+    max_summary_tokens: 1024
+
+# Delivery
+delivery:
+    discord:
+      enabled: false
+      webhook_url: ""
+    terminal:
+      enabled: true
+
+# Project notes
+projects:
+    file: "data/projects.yaml"
