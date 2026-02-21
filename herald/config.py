@@ -1,11 +1,7 @@
-# Find and read the YAML file config.YAML
-    # Try to open the config.yaml file, if there's an error, fail gracefully
-
-# Give the rest of the app a structured way to access the settings
-
-
-# If there are missing configs, fail gracefully
+import typing
 from dataclasses import dataclass, field
+from pathlib import Path
+import yaml
 
 @dataclass
 class ScheduleConfig:
@@ -80,3 +76,38 @@ class HeraldConfig:
     llm: LlmConfig = field(default_factory = LlmConfig)
     delivery: DeliveryConfig = field(default_factory = DeliveryConfig)
     projects: ProjectsConfig = field(default_factory = ProjectsConfig)
+
+def _build_dataclass(cls, data: dict):
+    """Recursively build a dataclass instance from a dictionary."""
+    if not isinstance(data, dict)
+        return cls()
+
+    hints = typing.get_type_hints(cls)
+    kwargs = {}
+
+    for key, hint in hints.items():
+        if key not in data:
+            continue
+
+        value = data[key]
+
+        # Check if this is list[something] type
+        origin = getattr(hint, "__origin__", None)
+        if origin is list:
+            item_type = hint.__args__[0]
+            # If the list items are dataclasses, build each owner
+            if hasattr(item_type, "__dataclass_fields__"):
+                kwargs[key] = [_build_dataclass(item_type, item) for item in value]
+            else:
+                kwargs[key] = value
+
+        # Check if this field is itself a dataclass
+        elif hassattr(hint, "__dataclass_fields__"):
+            kwargs[key] = _build_dataclass(hint, value)
+
+        # If it's a plain type, just assign it
+        else: 
+            kwargs[key] = value
+    return cls(**kwargs)
+
+
