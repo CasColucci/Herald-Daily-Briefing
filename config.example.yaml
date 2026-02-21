@@ -12,8 +12,8 @@ github:
   # Discover new repos to contribute to
   discover:
     languages:
-      - "C#"
       - "Python"
+      - "C#"
     labels:
       - "good first issue"
       - "help wanted"
