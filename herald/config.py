@@ -1,3 +1,4 @@
+import re
 import typing
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -110,4 +111,95 @@ def _build_dataclass(cls, data: dict):
             kwargs[key] = value
     return cls(**kwargs)
 
+def load_config(path: Path | None = None) -> HeraldConfig:
+    """Load configuration from a YAML file."""
+    if path is None:
+        path = Path("config.yaml")
 
+    if not path.exists():
+        raise FileNotFoundError(
+            f"Config file not found: {path}\n"
+            f"Copy config.example.yaml to config.yaml "
+            f"and fill in your values to get started."
+        )
+
+    with open(path) as f:
+        raw = yaml.safe_load(f) or {}
+
+    return _build_dataclass(HeraldConfig, raw)
+
+
+def validate_config(config: HeraldConfig) -> list[str]:
+    """Validate a HeraldConfig and return a list of error messages. """
+    errors = []
+
+    # --- Schedule ---
+    if not re.match(r"^\d{2}:\d{2}$", config.schedule.time):
+        errors.append("schedule.time must be in HH:MM 24-hour format (e.g. '08:00')")
+    else:
+        hours, minutes = config.schedule.time.split(":")
+        if not (0 <= int(hours) <= 23 and 0 <= int(minutes) <= 59):
+            errors.append("schedule.time is out of range (hours: 0-23, minutes: 0-59)")
+
+    # --- GitHub ---
+    if config.github.discover.min_stars < 0:
+        errors.append("github.discover.min_stars cannot be negative")
+
+    if config.github.discover.max_age_days < 1:
+        errors.append("github.discover.max_age_days must be at least 1")
+
+    for i, repo in enumerate(config.github.following):
+        if not repo.owner:
+            errors.append(f"github.following[{i}].owner cannot be empty")
+        if not repo.repo:
+            errors.append(f"github.following[{i}].repo cannot be empty")
+
+    # --- RSS ---
+    for i, feed in enumerate(config.rss.feeds):
+        if not feed.url:
+            errors.append(f"rss.feeds[{i}].url cannot be empty")
+        elif not feed.url.startswith(("http://", "https://")):
+            errors.append(f"rss.feeds[{i}].url must start with http:// or https://")
+
+    # --- Calendar ---
+    if config.calendar.url:
+        if not config.calendar.username:
+            errors.append("calendar.username is required when calendar.url is set")
+        if not config.calendar.password:
+            errors.append("calendar.password is required when calendar.url is set")
+        if config.calendar.lookahead_days < 1:
+            errors.append("calendar.lookahead_days must be at least 1")
+
+    # --- LLM ---
+    valid_providers = ("anthropic", "local")
+    if config.llm.provider not in valid_providers:
+        errors.append(f"llm.provider must be one of: {', '.join(valid_providers)}")
+
+    if config.llm.provider == "anthropic" and not config.llm.api_key:
+        errors.append("llm.api_key is required when using the anthropic provider")
+
+    if config.llm.max_summary_tokens < 1:
+        errors.append("llm.max_summary_tokens must be at least 1")
+
+    # --- Delivery ---
+    if config.delivery.discord.enabled and not config.delivery.discord.webhook_url:
+        errors.append("delivery.discord.webhook_url is required when discord is enabled")
+
+    if not config.delivery.discord.enabled and not config.delivery.terminal.enabled:
+        errors.append("At least one delivery method must be enabled")
+
+    # --- Projects ---
+    if config.projects.file and not Path(config.projects.file).exists():
+        errors.append(f"projects.file not found: {config.projects.file}")
+
+    return errors
+
+
+def load_and_validate_config(path: Path | None = None) -> HeraldConfig:
+    """Load config and raise if validation fails."""
+    config = load_config(path)
+    errors = validate_config(config)
+    if errors:
+        error_list = "\n  - ".join(errors)
+        raise ValueError(f"Config validation failed:\n  - {error_list}")
+    return config
