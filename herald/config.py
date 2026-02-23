@@ -49,7 +49,8 @@ class LlmConfig:
     model: str = "claude-haiku-4-5-20251001"
     api_key: str = ""
     max_summary_tokens: int = 1024
-
+    personality: str = "friendly"
+    
 @dataclass
 class DiscordConfig:
     enabled: bool = False
