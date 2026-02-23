@@ -80,7 +80,7 @@ class HeraldConfig:
 
 def _build_dataclass(cls, data: dict):
     """Recursively build a dataclass instance from a dictionary."""
-    if not isinstance(data, dict)
+    if not isinstance(data, dict):
         return cls()
 
     hints = typing.get_type_hints(cls)
